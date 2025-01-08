@@ -7,7 +7,7 @@
  * @param {number | boolean} value
  * @return {boolean} isInteger
  */
-export function isInteger (value) {
+function isInteger (value) {
   if (typeof value === 'boolean') {
     return true
   }
@@ -22,7 +22,7 @@ export function isInteger (value) {
  * @param {number} x
  * @returns {number}
  */
-export const sign = /* #__PURE__ */ Math.sign || function (x) {
+function sign (x) {
   if (x > 0) {
     return 1
   } else if (x < 0) {
@@ -37,7 +37,10 @@ export const sign = /* #__PURE__ */ Math.sign || function (x) {
  * @param {number} x
  * @returns {number}
  */
-export const log2 = /* #__PURE__ */ Math.log2 || function log2 (x) {
+function log2 (x) {
+  if(x <= 0) {
+    return NaN
+  }
   return Math.log(x) / Math.LN2
 }
 
@@ -49,7 +52,7 @@ export const log2 = /* #__PURE__ */ Math.log2 || function log2 (x) {
  * @return {SplitValue}
  *              Returns an object containing sign, coefficients, and exponent
  */
-export function splitNumber (value) {
+function splitNumber (value) {
   // parse the input value
   const match = String(value).toLowerCase().match(/^(-?)(\d+\.?\d*)(e([+-]?\d+))?$/)
   if (!match) {
@@ -90,7 +93,7 @@ export function splitNumber (value) {
  * @param {number} [precision=undefined]  Optional number of decimals after the
  *                                        decimal point. null by default.
  */
-export function toFixed (value, precision) {
+function toFixed (value, precision) {
   if (isNaN(value) || !isFinite(value)) {
     return String(value)
   }
@@ -125,7 +128,7 @@ export function toFixed (value, precision) {
 /**
  * Minimum number added to one that makes the result different than one
  */
-export const DBL_EPSILON = Number.EPSILON || 2.2204460492503130808472633361816E-16
+const DBL_EPSILON = Number.EPSILON || 2.2204460492503130808472633361816E-16
 
 /**
  * Compares two floating point numbers.
@@ -136,7 +139,7 @@ export const DBL_EPSILON = Number.EPSILON || 2.2204460492503130808472633361816E-
  *                            test whether x and y are exactly equal.
  * @return {boolean} whether the two numbers are nearly equal
  */
-export function nearlyEqual (x, y, epsilon) {
+function nearlyEqual (x, y, epsilon) {
   // if epsilon is null or undefined, test whether x and y are exactly equal
   if (epsilon === null || epsilon === undefined) {
     return x === y
@@ -165,4 +168,56 @@ export function nearlyEqual (x, y, epsilon) {
 
   // Infinite and Number or negative Infinite and positive Infinite cases
   return false
+}
+
+function roundDigits(splitValue, precision) {
+  const { sign, coefficients, exponent } = splitValue;
+
+  if (precision <= 0) {
+    throw new Error('Precision must be greater than 0');
+  }
+
+  // Якщо кількість цифр вже менша або рівна precision, повертаємо без змін
+  if (coefficients.length <= precision) {
+    return { sign, coefficients, exponent };
+  }
+
+  // Округлюємо цифри
+  const roundedCoefficients = coefficients.slice(0, precision);
+  if (coefficients[precision] >= 5) {
+    // Виконуємо перенесення (carry) при округленні
+    for (let i = precision - 1; i >= 0; i--) {
+      roundedCoefficients[i]++;
+      if (roundedCoefficients[i] < 10) break; // Немає перенесення
+      roundedCoefficients[i] = 0; // Скидаємо і переносимо
+    }
+
+    // Якщо всі цифри перенеслися (наприклад, 999 → 1000)
+    if (roundedCoefficients[0] === 0) {
+      roundedCoefficients.unshift(1);
+      return { sign, coefficients: roundedCoefficients, exponent: exponent + 1 };
+    }
+  }
+
+  return { sign, coefficients: roundedCoefficients, exponent };
+}
+
+function zeros(count) {
+  if (count < 0) {
+    throw new Error('Count must be a non-negative number');
+  }
+  return Array(count).fill(0);
+}
+
+module.exports = {
+  isInteger,
+  isFinite,
+  sign,
+  log2,
+  splitNumber,
+  toFixed,
+  nearlyEqual,
+  DBL_EPSILON,
+  roundDigits,
+  zeros,
 }
